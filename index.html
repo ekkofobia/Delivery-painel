@@ -1548,6 +1548,19 @@ button, label, a, img, svg, .brand, .plate-header, .subcat-min-acc-header { -web
         <button class="btn sm-btn" id="cfgIdSalvar" type="button">Salvar</button>
       </div>
       <div class="card" style="max-width:540px;margin-bottom:14px">
+        <h3 style="margin:0 0 4px;font-size:16px">Animação de carregamento</h3>
+        <p class="subtitle" style="margin:0 0 10px">Escolha o desenho que aparece quando o site abre.</p>
+        <style>
+          .loader-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+          .loader-op{border:2px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font:inherit;font-size:13px;min-width:0}
+          .loader-op.on{border-color:var(--ink)}
+          .loader-op__pv{height:72px;width:100%;display:flex;align-items:flex-end;justify-content:center}
+          .loader-op__pv .loader-pv{display:flex;flex-direction:column;align-items:center;gap:2px;width:60px}
+          .loader-op__pv .lb{display:block;opacity:1;transform:none;animation:none}
+        </style>
+        <div class="loader-grid" id="loaderGrid"></div>
+      </div>
+      <div class="card" style="max-width:540px;margin-bottom:14px">
         <h3 style="margin:0 0 10px;font-size:16px">Cores do painel</h3>
         <div class="cor-tabs"><button class="filter-pill active" type="button" data-cor-tema="claro">Claro</button><button class="filter-pill" type="button" data-cor-tema="escuro">Escuro</button></div>
         <div class="cor-set" id="tCols"></div>
@@ -1988,7 +2001,7 @@ const SVG_ICONS = {
 
 /* ===== CONFIGURAÇÕES UNIVERSAIS: nome, cores do painel e do site, paleta ===== */
 const DEF_S = {
-  panelName: 'Painel', siteName: 'Meu Site', siteUrl: '', whatsapp: '',
+  panelName: 'Painel', siteName: 'Meu Site', siteUrl: '', whatsapp: '', loader: 'hamburguer',
   temas: {
     claro:  { bg: '#f8f5e9', surface: '#fffdf5', ink: '#171719', muted: '#85847d', accent: '#f5df62', accent2: '#f2b3db' },
     escuro: { bg: '#141416', surface: '#1f1f23', ink: '#f4f4f5', muted: '#a1a1aa', accent: '#f2c46d', accent2: '#f2c46d' }
@@ -2004,7 +2017,7 @@ const DEF_S = {
 };
 function mergeS(v) {
   v = v || {}; const o = JSON.parse(JSON.stringify(DEF_S));
-  ['panelName', 'siteName', 'siteUrl', 'whatsapp'].forEach(k => { if (typeof v[k] === 'string') o[k] = v[k]; });
+  ['panelName', 'siteName', 'siteUrl', 'whatsapp', 'loader'].forEach(k => { if (typeof v[k] === 'string') o[k] = v[k]; });
   ['claro', 'escuro'].forEach(t => Object.assign(o.temas[t], (v.temas && v.temas[t]) || {}));
   Object.assign(o.site, v.site || {});
   if (Array.isArray(v.cores)) o.cores = v.cores.filter(c => c && /^#[0-9a-f]{6}$/i.test(c.hex || ''));
@@ -2028,14 +2041,30 @@ function aplicaMarca() {
 }
 function salvaS(msg) {
   SV('painel_S', S); aplicaCores(); aplicaMarca();
-  Promise.all([cfgSet('painel', S), cfgSet('site_visual', { nome: S.siteName, url: S.siteUrl, whatsapp: S.whatsapp, cores: S.site })])
+  Promise.all([cfgSet('painel', S), cfgSet('site_visual', { nome: S.siteName, url: S.siteUrl, whatsapp: S.whatsapp, cores: S.site, loader: S.loader })])
     .then(() => { if (msg) showToast(msg); }).catch(() => showToast('Erro ao salvar'));
 }
 const SL_P = [['bg', 'Fundo'], ['surface', 'Cartões'], ['ink', 'Texto'], ['muted', 'Texto suave'], ['accent', 'Destaque'], ['accent2', 'Destaque 2']];
 const SL_S = [['bg', 'Fundo'], ['surface', 'Cartões'], ['ink', 'Texto'], ['muted', 'Texto suave'], ['accent', 'Destaque'], ['accent2', 'Destaque 2'], ['btnRound', 'Botões'], ['btnPill', 'Botões pill'], ['tab', 'Botões das abas'], ['tabInk', 'Texto das abas'], ['title', 'Títulos']];
 let corTema = LS('tema', 'claro') === 'site' ? 'escuro' : 'claro';
 const corChip = (k, n, hex, attr) => `<button type="button" class="cor-chip" ${attr}="${k}"><i style="background:${hex}"></i>${n}</button>`;
+const LOADER_NOMES = { hamburguer: 'Hambúrguer', pizza: 'Pizza', hotdog: 'Hot-dog', bolo: 'Bolo', prato: 'Restaurante', sorvete: 'Sorvete' };
+const LOADER_PECAS = {
+  hamburguer: [{h:16,w:100,r:'6px 6px 22px 22px',bg:'#e2a955'},{h:20,w:100,r:'12px',bg:'#5b3a29'},{h:8,w:108,r:'3px',bg:'#f4b942'},{h:10,w:104,r:'10px',bg:'#a3b88c'},{h:36,w:100,r:'48px 48px 8px 8px',bg:'#e8b56a'}],
+  pizza: [{h:14,w:100,r:'6px 6px 14px 14px',bg:'#d9974a'},{h:12,w:98,r:'8px',bg:'#f4c95d'},{h:10,w:86,r:'10px',bg:'#c0392b'},{h:9,w:94,r:'8px',bg:'#f7dc7a'}],
+  hotdog: [{h:18,w:100,r:'9px 9px 16px 16px',bg:'#e0a458'},{h:16,w:112,r:'8px',bg:'#b5472d'},{h:6,w:104,r:'3px',bg:'#f2c230'},{h:22,w:100,r:'14px 14px 6px 6px',bg:'#e8b56a'}],
+  bolo: [{h:30,w:100,r:'6px',bg:'#b86b3c'},{h:8,w:96,r:'3px',bg:'#f8e3c0'},{h:26,w:84,r:'6px',bg:'#c98a52'},{h:6,w:88,r:'3px',bg:'#fff3e0'},{h:12,w:22,r:'6px',bg:'#d62e2e'}],
+  prato: [{h:10,w:120,r:'50%',bg:'#e7e9ee'},{h:40,w:100,r:'60px 60px 6px 6px',bg:'#c9ced6'}],
+  sorvete: [{h:22,w:56,r:'4px 4px 14px 14px',bg:'#d9a35f'},{h:24,w:84,r:'14px 14px 8px 8px',bg:'#f2b8c6'},{h:22,w:70,r:'14px 14px 8px 8px',bg:'#a7e0c4'}]
+};
+function renderLoaderGrid() {
+  const atual = S.loader || 'hamburguer';
+  $('#loaderGrid').innerHTML = Object.keys(LOADER_NOMES).map(k => `<button type="button" class="loader-op ${k === atual ? 'on' : ''}" data-loader="${k}">
+      <span class="loader-op__pv"><span class="loader-pv">${LOADER_PECAS[k].map(p => `<span class="lb" style="height:${p.h * 0.7}px;width:${p.w}%;border-radius:${p.r};background:${p.bg}"></span>`).join('')}</span></span>
+      <span>${LOADER_NOMES[k]}</span></button>`).join('');
+}
 function renderSettings() {
+  renderLoaderGrid();
   $('#cfgPainel').value = S.panelName; $('#cfgSite').value = S.siteName; $('#cfgUrl').value = S.siteUrl; $('#cfgZap').value = S.whatsapp || '';
   document.querySelectorAll('[data-cor-tema]').forEach(b => b.classList.toggle('active', b.dataset.corTema === corTema));
   $('#tCols').innerHTML = SL_P.map(([k, n]) => corChip(k, n, S.temas[corTema][k], 'data-tslot')).join('');
@@ -2051,6 +2080,7 @@ $('#page-settings').addEventListener('click', e => {
   if (e.target.closest('#cfgPaleta')) { openPicker(null, null); return; }
   if (e.target.closest('[data-cfg-paleta]')) { openPicker(null, null); return; }
   if (e.target.closest('[data-cfg-restaurar-site]')) { S.site = JSON.parse(JSON.stringify(DEF_S.site)); salvaS('Cores do site restauradas'); renderSettings(); return; }
+  if ((el = e.target.closest('[data-loader]'))) { S.loader = el.dataset.loader; salvaS('Animação salva'); renderSettings(); return; }
   if (e.target.closest('#cfgRestaurar')) { S.temas[corTema] = JSON.parse(JSON.stringify(DEF_S.temas[corTema])); salvaS('Cores restauradas'); renderSettings(); return; }
   if (e.target.closest('#cfgIdSalvar')) {
     S.panelName = $('#cfgPainel').value.trim() || DEF_S.panelName; S.siteName = $('#cfgSite').value.trim() || DEF_S.siteName; S.siteUrl = $('#cfgUrl').value.trim(); S.whatsapp = $('#cfgZap').value.replace(/\D/g, '');
