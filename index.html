@@ -2497,7 +2497,6 @@ $('#bkFile').addEventListener('change', async e => {
 function initApp() {
   bkMostra();
   renderSettings();
-  cfgGet('painel').then(v => { S = mergeS(v); SV('painel_S', S); aplicaCores(); aplicaMarca(); renderSettings(); }).catch(() => {});
   $('#chkAutoPrint').checked = autoPrint;
   $('#selPaperWidth').value = paperWidth;
   initDatePickerControls();
@@ -2511,6 +2510,8 @@ async function iniciarRemoto() {
     await ensureSession();
     if (!ses) return;
     await carregaLoja();
+    // configurações desta loja (nome do painel e do site), depois de saber qual loja é
+    try { const v = await cfgGet('painel'); S = mergeS(v); SV('painel_S', S); aplicaCores(); aplicaMarca(); renderSettings(); } catch (e) {}
     await carregaBiblioteca();
     $('#modalLogin').classList.remove('open');
     await semeiaPadroes();
