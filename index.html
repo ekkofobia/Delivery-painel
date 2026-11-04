@@ -1001,6 +1001,7 @@ body.tsite .drag-active{background:var(--surface)!important}
 .sm-btn{flex:1;min-height:44px;height:44px;padding:0 16px;font-size:13px}
 .br-row{display:grid;grid-template-columns:1fr 84px 38px;gap:8px;margin-bottom:8px;align-items:center}
 .tt-tabs{display:flex;gap:8px;margin:0 0 12px}
+.tt-save-fixo{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);width:min(280px,78vw);z-index:60;box-shadow:0 10px 26px rgba(0,0,0,.28)}
 .tt-tab{flex:1;min-height:42px;border-radius:12px;border:1.5px solid var(--ink);background:var(--surface);color:var(--ink);font-weight:700;cursor:pointer}
 .tt-tab.active{background:var(--ink);color:var(--bg)}
 .yt{position:relative;margin-bottom:8px}
@@ -1481,7 +1482,7 @@ button, label, a, img, svg, .brand, .plate-header, .subcat-min-acc-header { -web
         </div>
         <div class="sm-actions">
           <button class="btn light sm-btn" id="smAddHora" type="button">+ Linha</button>
-          <button class="btn sm-btn" id="smSalvar" type="button">Salvar</button>
+          <button class="btn sm-btn tt-save-fixo" id="smSalvar" type="button">Salvar</button>
         </div>
         <p class="subtitle" id="smMsg" style="margin-top:10px"></p>
       </div>
@@ -2496,7 +2497,7 @@ $('#bkFile').addEventListener('change', async e => {
 function initApp() {
   bkMostra();
   renderSettings();
-  cfgGet('painel').then(v => { if (v) { S = mergeS(v); SV('painel_S', S); aplicaCores(); aplicaMarca(); renderSettings(); } }).catch(() => {});
+  cfgGet('painel').then(v => { S = mergeS(v); SV('painel_S', S); aplicaCores(); aplicaMarca(); renderSettings(); }).catch(() => {});
   $('#chkAutoPrint').checked = autoPrint;
   $('#selPaperWidth').value = paperWidth;
   initDatePickerControls();
@@ -4461,8 +4462,8 @@ function heroCardsHtml() {
   const L = heroCardsList();
   if (!L.length) return '<div class="subtitle" style="grid-column:1/-1">Nenhum item disponível.</div>';
   const pos = ['Esquerda', 'Principal', 'Direita'];
-  return L.map((p, i) => `<button type="button" data-hcard="${i}" style="border:2px solid ${i === 1 ? 'var(--accent,#e0463c)' : '#ddd'};border-radius:12px;background:#fff;padding:6px;cursor:pointer;font:inherit;text-align:center">
-      <div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:#f3f3f3;display:flex;align-items:center;justify-content:center">${p.foto ? `<img src="${esc(p.foto)}" alt="" style="width:100%;height:100%;object-fit:cover">` : ''}</div>
+  return L.map((p, i) => `<button type="button" data-hcard="${i}" style="min-width:0;border:2px solid ${i === 1 ? 'var(--accent,#e0463c)' : '#ddd'};border-radius:12px;background:#fff;padding:6px;cursor:pointer;font:inherit;text-align:center">
+      <div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:#f3f3f3;display:flex;align-items:center;justify-content:center">${p.foto ? `<img src="${esc(p.foto)}" alt="" style="display:block;width:100%;height:100%;max-width:100%;object-fit:cover">` : ''}</div>
       <div style="font-size:12px;font-weight:700;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.nome)}</div>
       <div style="font-size:10px;color:#777">${i === 1 ? '★ Principal' : pos[i]}</div></button>`).join('');
 }
@@ -4489,11 +4490,11 @@ function desenhaTitulos() {
       <div class="tt-lb">Substituto</div>${ttInp('ttH3', h.sub || D.hero.sub, '', false)}
       <div class="tt-lb">Alinhamento</div>${ttAl('ttHA', h.a)}
       <div class="tt-lb" style="margin-top:12px">Cards da Hero (toque no card que deve ficar em cima)</div>
-      <div id="ttHCards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${heroCardsHtml()}</div>
+      <div id="ttHCards" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${heroCardsHtml()}</div>
       <div class="tt-lb" style="margin-top:12px">Botões do site (toque para escolher a aba)</div>
       <div id="ttHBtns" style="display:flex;gap:8px">${heroBtnsHtml()}</div>
       <p class="subtitle" style="margin:10px 0 10px">Escreva entre / / para o texto ficar amarelo. Ex.: /Cardápio/</p>
-      <button class="btn sm-btn" type="button" data-tt-hsave>Salvar</button>
+      <button class="btn sm-btn tt-save-fixo" type="button" data-tt-hsave>Salvar</button>
     </div>`;
     return;
   }
@@ -4534,7 +4535,7 @@ function desenhaTitulos() {
       const subs = aceitaSub(c) ? CAT.filter(sc => sc.id !== c.id && lugarDe(sc.id) === 'item' && parentsDe(sc.id).includes(String(c.id))) : [];
       const linha = (nome, rot, subDef) => { const o = TT.nomes[nome] || {}; const i = 'k' + Math.random().toString(36).slice(2, 8);
         return `<div class="tt-lb">${rot}</div>${ttInp(i + 't', o.t || '', nome, true, `data-ttk="${esc(nome)}" data-f="t"`)}${ttInp(i + 's', o.s || '', subDef || 'Substituto', false, `data-ttk="${esc(nome)}" data-f="s"`)}`; };
-      body = `<div class="tt-body">${linha(c.nome, 'Título do card', c.substituto) + subs.map(sc => linha(sc.nome, 'Subcategoria', sc.substituto)).join('')}<button class="btn sm-btn" type="button" data-tt-save style="margin-top:12px">Salvar</button></div>`;
+      body = `<div class="tt-body">${linha(c.nome, 'Título do card', c.substituto) + subs.map(sc => linha(sc.nome, 'Subcategoria', sc.substituto)).join('')}<button class="btn sm-btn tt-save-fixo" type="button" data-tt-save>Salvar</button></div>`;
     }
     html += `<div class="tt-card tt-item tt-prim ${aberto ? 'open' : ''}" data-pn="${esc(c.nome)}"><div class="tt-h" data-tt-h="${c.id}"><strong>${esc(c.nome)}</strong><span>${aberto ? '▴' : '▾'}</span></div>${body}</div>`;
     html += TT.custom.filter(cu => cu.cat === c.nome && cu.pos === 'after').map(custCard).join('');
