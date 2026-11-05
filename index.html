@@ -1564,6 +1564,18 @@ button, label, a, img, svg, .brand, .plate-header, .subcat-min-acc-header { -web
         <div class="loader-grid" id="loaderGrid"></div>
       </div>
       <div class="card" style="max-width:540px;margin-bottom:14px">
+        <h3 style="margin:0 0 4px;font-size:16px">Tipos de pedido</h3>
+        <p class="subtitle" style="margin:0 0 10px">Marque o que a loja trabalha. O que não estiver marcado não aparece no site.</p>
+        <style>
+          .modo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+          .modo-op{border:2px solid var(--line);border-radius:14px;background:var(--surface);padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font:inherit;font-size:14px;font-weight:600;min-width:0}
+          .modo-op.on{border-color:var(--ink)}
+          .modo-op__ck{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px}
+          .modo-op.on .modo-op__ck{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+        </style>
+        <div class="modo-grid" id="modoGrid"></div>
+      </div>
+      <div class="card" style="max-width:540px;margin-bottom:14px">
         <h3 style="margin:0 0 10px;font-size:16px">Cores do painel</h3>
         <div class="cor-tabs"><button class="filter-pill active" type="button" data-cor-tema="claro">Claro</button><button class="filter-pill" type="button" data-cor-tema="escuro">Escuro</button></div>
         <div class="cor-set" id="tCols"></div>
@@ -2130,8 +2142,22 @@ function renderLoaderGrid() {
       <span class="loader-op__pv">${k === 'hamburguer' ? pvHamb : `<svg viewBox="${LOADERS[k].vb}" aria-hidden="true">${LOADERS[k].c.map(c => `<g class="lb">${c}</g>`).join('')}</svg>`}</span>
       <span>${LOADER_NOMES[k]}</span></button>`).join('');
 }
+let MODOS = { entrega: true, retirada: true, mesa: true };
+const MODOS_NOMES = { entrega: 'Entrega', retirada: 'Retirada', mesa: 'Comer aqui' };
+function renderModosGrid() {
+  $('#modoGrid').innerHTML = Object.keys(MODOS_NOMES).map(k => `<button type="button" class="modo-op ${MODOS[k] ? 'on' : ''}" data-modo="${k}" aria-pressed="${!!MODOS[k]}">
+      <span class="modo-op__ck">${MODOS[k] ? '✓' : ''}</span><span>${MODOS_NOMES[k]}</span></button>`).join('');
+}
+async function toggleModo(k) {
+  const novo = { ...MODOS, [k]: !MODOS[k] };
+  if (!Object.values(novo).some(Boolean)) { showToast('Deixe pelo menos um tipo marcado'); return; }
+  MODOS = novo; renderModosGrid();
+  try { await cfgSet('modos', MODOS); showToast('Tipos de pedido salvos'); }
+  catch (e) { showToast('Não consegui salvar'); }
+}
 function renderSettings() {
   renderLoaderGrid();
+  renderModosGrid();
   $('#cfgPainel').value = S.panelName; $('#cfgSite').value = S.siteName; $('#cfgUrl').value = S.siteUrl; $('#cfgZap').value = S.whatsapp || '';
   document.querySelectorAll('[data-cor-tema]').forEach(b => b.classList.toggle('active', b.dataset.corTema === corTema));
   $('#tCols').innerHTML = SL_P.map(([k, n]) => corChip(k, n, S.temas[corTema][k], 'data-tslot')).join('');
@@ -2147,6 +2173,7 @@ $('#page-settings').addEventListener('click', e => {
   if (e.target.closest('#cfgPaleta')) { openPicker(null, null); return; }
   if (e.target.closest('[data-cfg-paleta]')) { openPicker(null, null); return; }
   if (e.target.closest('[data-cfg-restaurar-site]')) { S.site = JSON.parse(JSON.stringify(DEF_S.site)); salvaS('Cores do site restauradas'); renderSettings(); return; }
+  if ((el = e.target.closest('[data-modo]'))) { toggleModo(el.dataset.modo); return; }
   if ((el = e.target.closest('[data-loader]'))) { S.loader = el.dataset.loader; salvaS('Animação salva'); renderSettings(); return; }
   if (e.target.closest('#cfgRestaurar')) { S.temas[corTema] = JSON.parse(JSON.stringify(DEF_S.temas[corTema])); salvaS('Cores restauradas'); renderSettings(); return; }
   if (e.target.closest('#cfgIdSalvar')) {
@@ -2609,6 +2636,8 @@ async function iniciarRemoto() {
     await carregaLoja();
     // configurações desta loja (nome do painel e do site), depois de saber qual loja é
     try { const v = await cfgGet('painel'); S = mergeS(v); SV('painel_S', S); aplicaCores(); aplicaMarca(); renderSettings(); } catch (e) {}
+    try { const md = await cfgGet('modos'); MODOS = Object.assign({ entrega: true, retirada: true, mesa: true }, md || {}); } catch (e) { MODOS = { entrega: true, retirada: true, mesa: true }; }
+    renderSettings();
     await carregaBiblioteca();
     $('#modalLogin').classList.remove('open');
     await semeiaPadroes();
