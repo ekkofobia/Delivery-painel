@@ -5454,7 +5454,6 @@ function abrePickerFoto(p, cb) {
   const dono = BIB_ITENS.find(i => i.url === p.foto);
   BIB_TAB = dono ? dono.cat : 'hamburguer';
   $('#pickerTitulo').textContent = 'Foto de ' + p.nome;
-  $('#bibLink').value = '';
   renderBibTabs(); renderBibGrid(p.foto);
   $('#modalPicker').classList.add('open');
 }
