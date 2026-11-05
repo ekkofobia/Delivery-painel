@@ -2152,7 +2152,11 @@ async function toggleModo(k) {
   const novo = { ...MODOS, [k]: !MODOS[k] };
   if (!Object.values(novo).some(Boolean)) { showToast('Deixe pelo menos um tipo marcado'); return; }
   MODOS = novo; renderModosGrid();
-  try { await cfgSet('modos', MODOS); showToast('Tipos de pedido salvos'); }
+  try {
+    await cfgSet('modos', MODOS);
+    const nomeLoja = (LOJAS_CONTA.find(l => l.id === LOJA_ID) || {}).nome || '?';
+    showToast('Salvo na loja ' + nomeLoja + ' (' + String(LOJA_ID).slice(0, 8) + ')');
+  }
   catch (e) { showToast('Erro ao salvar: ' + (e.detalhe || e.message)); console.error('modos', e); }
 }
 function renderSettings() {
