@@ -2153,7 +2153,7 @@ async function toggleModo(k) {
   if (!Object.values(novo).some(Boolean)) { showToast('Deixe pelo menos um tipo marcado'); return; }
   MODOS = novo; renderModosGrid();
   try { await cfgSet('modos', MODOS); showToast('Tipos de pedido salvos'); }
-  catch (e) { showToast('Não consegui salvar'); }
+  catch (e) { showToast('Erro ao salvar: ' + (e.detalhe || e.message)); console.error('modos', e); }
 }
 function renderSettings() {
   renderLoaderGrid();
