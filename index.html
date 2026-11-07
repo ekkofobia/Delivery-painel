@@ -2657,6 +2657,9 @@ async function semeiaPadroes() {
   try {
     if (await cfgGet('bairros') == null) { await cfgSet('bairros', BAIRROS_DEF); await cfgSet('entrega', { combinar: false, gratis_acima: 0 }); }
   } catch (e) {}
+  try {   // horário padrão: sem ele o site considera a loja sempre aberta
+    if (await cfgGet('site') == null) await cfgSet('site', { horarios: SITE_DEF.horarios });
+  } catch (e) {}
 }
 $('#formLogin').onsubmit = async e => {
   e.preventDefault(); $('#loginError').textContent = '';
